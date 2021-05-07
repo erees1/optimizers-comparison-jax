@@ -15,9 +15,10 @@ def random_layer_params(m, n, key, scale=1e-1):
 
 def init_network_params(sizes, key):
     keys = random.split(key, len(sizes))
-    return [
-        random_layer_params(m, n, k) for m, n, k in zip(sizes[:-1], sizes[1:], keys)
-    ]
+    params = []
+    for m, n, k in zip(sizes[:-1], sizes[1:], keys):
+        params.extend(random_layer_params(m, n, k))
+    return params
 
 
 @jit
@@ -37,11 +38,11 @@ class FullyConnectedNetwork:
     @partial(jit, static_argnums=(0,))
     def predict(self, params, image):
         activations = image
-        for w, b in params[:-1]:
+        for w, b in zip(params[:-2:2], params[1:-1:2]):
             outputs = jnp.dot(activations, w) + b
             activations = relu(outputs)
 
-        final_w, final_b = params[-1]
+        final_w, final_b = params[-2], params[-1]
         logits = jnp.dot(activations, final_w) + final_b
         return logits - logsumexp(logits, axis=1, keepdims=True)
 
