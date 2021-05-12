@@ -133,6 +133,7 @@ class RMSPropWithMomentum(Optimizer):
         p = p + mom
         return p, (sq_grads, mom)
 
+
 class Adam(Optimizer):
     def __init__(self, *args, beta1=0.9, beta2=0.999, epsilon=1e-6, **kwargs):
         """
