@@ -48,6 +48,15 @@ def _one_hot(x, k, dtype=np.float32):
     return np.array(x[:, None] == np.arange(k), dtype)
 
 
+def _process(images, labels, flatten=True):
+    if flatten:
+        images = _partial_flatten(images) / np.float32(255.0)
+    else:
+        images = images / np.float32(255.0)
+    labels = _one_hot(labels, 10)
+    return images, labels
+
+
 def mnist_raw():
     """Download and parse the raw MNIST dataset."""
     # CVDF mirror of http://yann.lecun.com/exdb/mnist/
@@ -81,12 +90,17 @@ def mnist_raw():
     return train_images, train_labels, test_images, test_labels
 
 
-def mnist(permute_train=False):
+def mnist(permute_train=False, flatten=True):
     """Download, parse and process MNIST data to unit scale and one-hot labels."""
     train_images, train_labels, test_images, test_labels = mnist_raw()
 
-    train_images, train_labels = _process(train_images, train_labels)
-    test_images, test_labels = _process(test_images, test_labels)
+    train_images, train_labels = _process(train_images, train_labels, flatten)
+    test_images, test_labels = _process(test_images, test_labels, flatten)
+
+    if not flatten:
+        # add channel dimension
+        train_images = np.expand_dims(train_images, 1)
+        test_images = np.expand_dims(test_images, 1)
 
     if permute_train:
         perm = np.random.RandomState(0).permutation(train_images.shape[0])
@@ -94,12 +108,6 @@ def mnist(permute_train=False):
         train_labels = train_labels[perm]
 
     return train_images, train_labels, test_images, test_labels
-
-
-def _process(images, labels):
-    images = _partial_flatten(images) / np.float32(255.0)
-    labels = _one_hot(labels, 10)
-    return images, labels
 
 
 def cifar_raw():
@@ -136,10 +144,16 @@ def cifar_raw():
     return train_images, train_labels, test_images, test_labels
 
 
-def cifar(permute_train=False):
+def cifar(permute_train=False, flatten=True):
     train_images, train_labels, test_images, test_labels = cifar_raw()
-    train_images, train_labels = _process(train_images, train_labels)
-    test_images, test_labels = _process(test_images, test_labels)
+    # cifar_raw returns flattened images
+
+    if not flatten:
+        train_images = np.reshape(train_images, (-1, 3, 32, 32))
+        test_images = np.reshape(test_images, (-1, 3, 32, 32))
+
+    train_images, train_labels = _process(train_images, train_labels, flatten)
+    test_images, test_labels = _process(test_images, test_labels, flatten)
 
     if permute_train:
         perm = np.random.RandomState(0).permutation(train_images.shape[0])
